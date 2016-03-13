@@ -1,0 +1,56 @@
+# Sample udhcpd configuration file (/etc/udhcpd.conf)
+
+# The start and end of the IP lease block
+
+start		192.168.42.20	#default: 192.168.0.20
+end		192.168.42.50	#default: 192.168.0.254
+
+# If remaining is true (default), udhcpd will store the time
+# remaining for each lease in the udhcpd leases file. This is
+# for embedded systems that cannot keep time between reboots.
+# If you set remaining to no, the absolute time that the lease
+# expires at will be stored in the dhcpd.leases file.
+
+#remaining	yes		#default: yes
+
+# The remainer of options are DHCP options and can be specifed with the
+# keyword 'opt' or 'option'. If an option can take multiple items, such
+# as the dns option, they can be listed on the same line, or multiple
+# lines. The only option with a default is 'lease'.
+
+opt dns 8.8.8.8 4.2.2.2         # The DNS servers client devices will use.
+opt subnet 255.255.255.0
+opt router 192.168.42.1         # The Pi's IP address on wlan0 which we will set up shortly.
+opt lease 864000                # 10 day DHCP lease time in seconds
+
+# Currently supported options, for more info, see options.c
+#opt subnet
+#opt timezone
+#opt router
+#opt timesrv
+#opt namesrv
+#opt dns
+#opt logsrv
+#opt cookiesrv
+#opt lprsrv
+#opt bootsize
+#opt domain
+#opt swapsrv
+#opt rootpath
+#opt ipttl
+#opt mtu
+#opt broadcast
+#opt wins
+#opt lease
+#opt ntpsrv
+#opt tftp
+#opt bootfile
+#opt wpad
+
+# Static leases map
+#static_lease 00:60:08:11:CE:4E 192.168.0.54
+#static_lease 00:60:08:11:CE:3E 192.168.0.44
+
+# The interface that udhcpd will use
+
+#interface       eth0            #default: eth0
