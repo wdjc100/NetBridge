@@ -1,10 +1,11 @@
 #!/bin/bash
 
+
 # We need to be root to move files and start/stop services
 if (( $EUID != 0 )); then
   echo ""
   echo "Please run with root privileges, e.g.:"
-  echo "`whoami`@`hostname`:`pwd` $ sudo ${0}" #`basename "$0"`"
+  echo "`whoami`@`hostname`:`pwd` $ sudo ${0}"
   echo ""
   exit
 fi
@@ -34,12 +35,12 @@ fi
 # Valid cli_dev: wlan eth [bluetooth]
 
 all_dev="`ifconfig -a | sed 's/[ \t].*//;/^\(lo\|\)$/d'` ppp0 bnep0" # Get a list of all network devices, less 'lo'.
-
+                                                                     #  Add ppp0 and bnep0 for testing (bnep0 will only appear when connected)
 echo "Choose internet interface:"
 select ans in $all_dev; do
   int_dev=$ans;
   if [ -n "$int_dev" ]; then
-    break; # $int_dev not empty
+    break; # $int_dev not empty - i.e. choice made
   fi
 done
 
@@ -49,12 +50,13 @@ echo ""
 
 all_dev=${all_dev/$int_dev/} # We can't use the same adapter twice, so remove from list
 all_dev=${all_dev//ppp?/}    # We can't use the ppp# adapter as client, so remove from list
+all_dev=${all_dev//bnep?/}   # This script can't use Bluetooth as client, so remove from list.
 
 echo "Choose client interface:"
 select ans in $all_dev; do
   cli_dev=$ans;
   if [ -n "$cli_dev" ]; then
-    break; # $cli_dev not empty
+    break; # $cli_dev not empty - i.e. choice made
   fi
 done
 
@@ -67,7 +69,7 @@ echo ""
 if [[ $cli_dev == wlan* ]]
 then
   killall wpa_supplicant > /dev/null 2>&1 # Kill wpa_supplicant (session only; it interfers with wlan/AP config)
-  cp ~pi/NetBridge/hostapd.conf.1 /etc/hostapd/hostapd.conf
+  cp `dirname "$0"`/hostapd.conf.1 /etc/hostapd/hostapd.conf
   sed -i -e "s/%%IFACE%%/$cli_dev/g" /etc/hostapd/hostapd.conf # Set adapter
 
   mac=`cat /sys/class/net/$cli_dev/address | tail -c 9`
@@ -108,16 +110,19 @@ fi
 if [[ $int_dev == bnep* ]]
 then
   service bluetooth start # In case bluetooth daemon isn't running
-  bt-network -c 30:39:26:15:26:72 nap -d & # Connect - need menu to choose MAC of paired device
-  sleep 5 # Alloe time to connect
+  bt-device --list
+  echo ""
+  read -p "Enter MAC of target device: " bt_mac
+  bt-network -c $bt_mac nap -d & # Connect - device must already be paired
+  sleep 5 # Allowe time to connect
   dhclient $int_dev
 fi
 
 
 #Setup DHCP server
 
-cp ~pi/NetBridge/udhcpd.conf.1 /etc/udhcpd.conf
-echo "interface       $cli_dev" >> /etc/udhcpd.conf
+cp `dirname "$0"`/udhcpd.conf.1 /etc/udhcpd.conf
+sed -i -e "s/%%IFACE%%/$cli_dev/g" /etc/udhcpd.conf # Set adapter
 
 ifconfig $cli_dev 192.168.42.1
 
